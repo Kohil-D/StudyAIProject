@@ -10,7 +10,7 @@ from datetime import datetime
 # -------------------------
 
 # IMPORTANT: Replace this with your actual OpenRouter API key
-API_KEY = "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"
+API_KEY = "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"
     
 # OpenRouter API endpoint (corrected)
 URL = "https://api.openai.com/v1/chat/completions"
@@ -843,6 +843,7 @@ elif st.session_state.page == "history":
         
 
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
