@@ -90,10 +90,9 @@ def generate_quiz(text, num_questions=5):
         # Clean markdown formatting if present
         
 
-        result = re.sub(r"^```json\s*", "", result)
-        result = re.sub(r"\s*```
+        result = re.sub(r'^```json\s*', '', result)   # removes starting ```json
+        result = re.sub(r'\s*```$', '', result)      # removes ending ```
         result = result.strip()
-
         try:
             quiz_data = json.loads(result)
         except json.JSONDecodeError:
@@ -848,6 +847,7 @@ elif st.session_state.page == "history":
         
 
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
