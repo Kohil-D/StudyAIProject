@@ -9,17 +9,17 @@ from datetime import datetime
 # API Configuration
 # -------------------------
 
-# IMPORTANT: Replace this with your actual OpenRouter API key
+# IMPORTANT: Replace this with your actual OpenAI API key securely
 API_KEY = "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"
-    
-# OpenRouter API endpoint (corrected)
+
+# OpenAI API endpoint
 URL = "https://api.openai.com/v1/chat/completions"
 
 # -------------------------
 # Backend: Quiz Generator
 # -------------------------
 def generate_quiz(text, num_questions=5):
-    """Generate quiz questions from text using OpenRouter API"""
+    """Generate quiz questions from text using OpenAI API"""
     if not text or not text.strip():
         return None, "Please provide text to generate questions from."
     
@@ -28,9 +28,8 @@ def generate_quiz(text, num_questions=5):
     
     headers = {
         "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://github.com/yourusername/study-smart",  # Optional but recommended
-        "X-Title": "Study Smart Quiz Generator"  # Optional but recommended
+        "Content-Type": "application/json"
+        # Removed optional headers to prevent possible errors
     }
 
     prompt = f"""
@@ -60,7 +59,7 @@ def generate_quiz(text, num_questions=5):
     """
 
     data = {
-        "model": "openai/gpt-4o-mini",  # OpenRouter model format
+        "model": "gpt-4o-mini",  # Correct model name for OpenAI Chat Completion API
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.5,
         "max_tokens": 2000
@@ -74,22 +73,22 @@ def generate_quiz(text, num_questions=5):
             try:
                 error_data = response.json()
                 error_detail = error_data.get("error", {}).get("message", "")
-            except:
+            except Exception:
                 pass
             
             if response.status_code == 401:
-                return None, f"Invalid API key. Please check your OpenAI API key. {error_detail}"
+                return None, f"Invalid API key. Please check your API key. {error_detail}"
             elif response.status_code == 402:
-                return None, "Insufficient credits. Please add credits to your OpenRouter account."
+                return None, "Insufficient credits. Please add credits to your account."
             elif response.status_code == 429:
-                return None, "Rate limit exceeded. Please try again in a moment."
+                return None, "Rate limit exceeded. Please try again later."
             else:
                 return None, f"API Error {response.status_code}: {error_detail or response.text}"
 
-        result = response.json()["choices"][0]["message"]["content"]
+        result = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
         
         # Clean markdown formatting if present
-        result = re.sub(r'^```json\s*', '', result)
+        result = re.sub(r'^```
         result = re.sub(r'\s*```$', '', result)
         result = result.strip()
 
@@ -101,7 +100,7 @@ def generate_quiz(text, num_questions=5):
             if match:
                 try:
                     quiz_data = json.loads(match.group())
-                except:
+                except Exception:
                     return None, "Failed to parse quiz response."
             else:
                 return None, "Failed to parse quiz response."
@@ -111,12 +110,16 @@ def generate_quiz(text, num_questions=5):
         if not quiz_questions:
             return None, "No questions were generated. Try with more text."
         
-        # Shuffle options while preserving correct answer
+        # Shuffle options while preserving the correct answer string as is
         for q in quiz_questions:
-            if "options" in q and "answer" in q and "question" in q:
+            if all(k in q for k in ["options", "answer", "question"]) and isinstance(q["options"], list):
                 correct = q["answer"]
                 random.shuffle(q["options"])
-                q["answer"] = correct
+                # Keep the 'answer' as original string from API response
+                # (Assuming the answer string matches one of the options exactly)
+                if correct not in q["options"]:
+                    # If correct answer string is not in options after shuffle (rare), add it back
+                    q["options"].append(correct)
             else:
                 return None, "Invalid question format received."
 
@@ -843,6 +846,7 @@ elif st.session_state.page == "history":
         
 
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
