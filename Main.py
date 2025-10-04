@@ -8,9 +8,9 @@ from datetime import datetime
 # -------------------------
 # API Configuration - hardcoded key (not recommended for production)
 # Replace the string below with your actual API key
-API_KEY = "your_actual_api_key_here"
+API_KEY = "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"
 
-if not API_KEY or API_KEY == "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":
+if not API_KEY or API_KEY == "your_actual_api_key_here":
     st.error("Please replace 'your_actual_api_key_here' with your real OpenAI API key in the code.")
     st.stop()
 
@@ -849,6 +849,7 @@ elif st.session_state.page == "history":
         
 
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
