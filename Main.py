@@ -13,8 +13,7 @@ from datetime import datetime
 # Load API key from environment variable securely
 API_KEY = os.getenv("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")
 
-if not API_KEY:
-    raise ValueError("API key not found. Please set the OPENAI_API_KEY environment variable.")
+
 
 # OpenAI API endpoint
 URL = "https://api.openai.com/v1/chat/completions"
@@ -855,6 +854,7 @@ elif st.session_state.page == "history":
         
 
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
