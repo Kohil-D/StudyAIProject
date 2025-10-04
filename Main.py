@@ -6,12 +6,12 @@ import random
 from datetime import datetime
 
 # -------------------------
-# API Configuration - hardcoded key (not recommended for production)
-# Replace the string below with your actual API key
-API_KEY = "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"
-
-if not API_KEY or API_KEY == "your_actual_api_key_here":
-    st.error("Please replace 'your_actual_api_key_here' with your real OpenAI API key in the code.")
+# API Configuration - Using Streamlit secrets
+# -------------------------
+try:
+    API_KEY = st.secrets["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"]
+except KeyError:
+    st.error("API key is missing! Please add it in the Streamlit secrets.")
     st.stop()
 
 URL = "https://api.openai.com/v1/chat/completions"
@@ -205,6 +205,21 @@ def get_colors():
         }
 
 colors = get_colors()
+
+
+# -------------------------
+# Place your CSS styling here exactly as before (omitted here for brevity)
+# -------------------------
+# (Include your full CSS styling block here.)
+
+# -------------------------
+# Sidebar Navigation and Page Logic
+# -------------------------
+# (Include all your sidebar buttons, navigation logic, main page, quiz page,
+# and history page exactly as you previously had them.)
+
+# The rest of your code should remain the same as in your current script.
+
 # -------------------------
 # CSS Styling (unchanged from your original, omitted here for brevity)
 # -------------------------
@@ -849,6 +864,7 @@ elif st.session_state.page == "history":
         
 
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
