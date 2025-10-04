@@ -3,30 +3,23 @@ import requests
 import json
 import re
 import random
-import os
 from datetime import datetime
 
 # -------------------------
-# CONFIGURATION - Environment Variable API Key
+# API Configuration
 # -------------------------
-# Get API key from environment variable
-API_KEY = os.getenv("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")
 
-# If not set, allow user to input it
-if not API_KEY:
-    st.warning("⚠️ OpenAI API Key not found in environment variables")
-    API_KEY = st.text_input("Enter your OpenAI API Key:", type="password", key="api_key_input")
-    if not API_KEY:
-        st.info("💡 Set the OPENAI_API_KEY environment variable or enter your key above to continue")
-        st.stop()
+# IMPORTANT: Replace this with your actual OpenRouter API key
+API_KEY = "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"
     
-URL = "https://api.openai.com/v1/chat/completions"
+# OpenRouter API endpoint (corrected)
+URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # -------------------------
-# Backend: OpenAI Quiz Generator
+# Backend: Quiz Generator
 # -------------------------
 def generate_quiz(text, num_questions=5):
-    """Generate quiz questions from text using OpenAI API"""
+    """Generate quiz questions from text using OpenRouter API"""
     if not text or not text.strip():
         return None, "Please provide text to generate questions from."
     
@@ -35,7 +28,9 @@ def generate_quiz(text, num_questions=5):
     
     headers = {
         "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://github.com/yourusername/study-smart",  # Optional but recommended
+        "X-Title": "Study Smart Quiz Generator"  # Optional but recommended
     }
 
     prompt = f"""
@@ -65,7 +60,7 @@ def generate_quiz(text, num_questions=5):
     """
 
     data = {
-        "model": "gpt-4o-mini",
+        "model": "openai/gpt-4o-mini",  # OpenRouter model format
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.5,
         "max_tokens": 2000
@@ -75,12 +70,21 @@ def generate_quiz(text, num_questions=5):
         response = requests.post(URL, headers=headers, json=data, timeout=30)
         
         if response.status_code != 200:
+            error_detail = ""
+            try:
+                error_data = response.json()
+                error_detail = error_data.get("error", {}).get("message", "")
+            except:
+                pass
+            
             if response.status_code == 401:
-                return None, "Invalid API key. Please check your OpenAI API key."
+                return None, f"Invalid API key. Please check your OpenRouter API key. {error_detail}"
+            elif response.status_code == 402:
+                return None, "Insufficient credits. Please add credits to your OpenRouter account."
             elif response.status_code == 429:
                 return None, "Rate limit exceeded. Please try again in a moment."
             else:
-                return None, f"API Error {response.status_code}"
+                return None, f"API Error {response.status_code}: {error_detail or response.text}"
 
         result = response.json()["choices"][0]["message"]["content"]
         
@@ -577,7 +581,7 @@ with st.sidebar:
 # -------------------------
 if st.session_state.page == "main":
     st.title("🍰 Study Smart")
-    st.markdown("Play Quizes from a Paragraph")
+    st.markdown("Play Quizzes from a Paragraph")
     
     # Input section
     st.markdown("<div class='card'>", unsafe_allow_html=True)
@@ -779,7 +783,6 @@ elif st.session_state.page == "quiz":
                         st.session_state.show_results = False
                         st.rerun()
 
-
 # -------------------------
 # HISTORY PAGE
 # -------------------------
@@ -840,3 +843,4 @@ elif st.session_state.page == "history":
         
 
         st.markdown("</div>", unsafe_allow_html=True)
+
