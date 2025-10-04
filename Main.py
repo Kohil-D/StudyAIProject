@@ -3,14 +3,18 @@ import requests
 import json
 import re
 import random
+import os
 from datetime import datetime
 
 # -------------------------
 # API Configuration
 # -------------------------
 
-# IMPORTANT: Replace this with your actual OpenAI API key securely
-API_KEY = "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"
+# Load API key from environment variable securely
+API_KEY = os.getenv("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")
+
+if not API_KEY:
+    raise ValueError("API key not found. Please set the OPENAI_API_KEY environment variable.")
 
 # OpenAI API endpoint
 URL = "https://api.openai.com/v1/chat/completions"
@@ -23,13 +27,9 @@ def generate_quiz(text, num_questions=5):
     if not text or not text.strip():
         return None, "Please provide text to generate questions from."
     
-    if not API_KEY:
-        return None, "API key is required."
-    
     headers = {
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json"
-        # Removed optional headers to prevent possible errors
     }
 
     prompt = f"""
@@ -59,7 +59,7 @@ def generate_quiz(text, num_questions=5):
     """
 
     data = {
-        "model": "gpt-4o-mini",  # Correct model name for OpenAI Chat Completion API
+        "model": "gpt-4o-mini",
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.5,
         "max_tokens": 2000
@@ -87,39 +87,34 @@ def generate_quiz(text, num_questions=5):
 
         result = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
         
-        # Clean markdown formatting if present
-        
+        # Attempt to extract JSON content from response (handles markdown fences)
+        def extract_json_from_response(text):
+            pattern = re.compile(r"``````", re.DOTALL)
+            match = pattern.search(text)
+            if match:
+                return match.group(1).strip()
+            match = re.search(r"\{.*\}", text, re.DOTALL)
+            if match:
+                return match.group(0).strip()
+            return text.strip()
 
-        result = re.sub(r'^```json\s*', '', result)   # removes starting ```json
-        result = re.sub(r'\s*```$', '', result)      # removes ending ```
-        result = result.strip()
+        result = extract_json_from_response(result)
+
         try:
             quiz_data = json.loads(result)
         except json.JSONDecodeError:
-            # Try to extract JSON if wrapped in text
-            match = re.search(r'\{.*\}', result, re.DOTALL)
-            if match:
-                try:
-                    quiz_data = json.loads(match.group())
-                except Exception:
-                    return None, "Failed to parse quiz response."
-            else:
-                return None, "Failed to parse quiz response."
+            return None, "Failed to parse quiz response."
 
         quiz_questions = quiz_data.get("quiz", [])
         
         if not quiz_questions:
             return None, "No questions were generated. Try with more text."
         
-        # Shuffle options while preserving the correct answer string as is
         for q in quiz_questions:
             if all(k in q for k in ["options", "answer", "question"]) and isinstance(q["options"], list):
                 correct = q["answer"]
                 random.shuffle(q["options"])
-                # Keep the 'answer' as original string from API response
-                # (Assuming the answer string matches one of the options exactly)
                 if correct not in q["options"]:
-                    # If correct answer string is not in options after shuffle (rare), add it back
                     q["options"].append(correct)
             else:
                 return None, "Invalid question format received."
@@ -137,7 +132,6 @@ def generate_quiz(text, num_questions=5):
 # Initialize Session State
 # -------------------------
 def init_session_state():
-    """Initialize all session state variables"""
     defaults = {
         "page": "main",
         "paragraphs": [],
@@ -170,7 +164,6 @@ st.set_page_config(
 # Dynamic Theme System
 # -------------------------
 def get_colors():
-    """Get color scheme based on dark/light mode"""
     if st.session_state.dark_mode:
         return {
             'bg_primary': '#0f172a',
@@ -217,6 +210,21 @@ def get_colors():
         }
 
 colors = get_colors()
+
+# -------------------------
+# CSS Styling (unchanged from your original, omitted here for brevity)
+# -------------------------
+# ... include your CSS styling block here exactly as is ...
+
+# -------------------------
+# Sidebar Navigation and page logic
+# -------------------------
+# ... include your full sidebar and all page code as you provided ...
+
+# (For brevity here, your full code below this point remains unchanged.)
+
+# Note: Make sure you copy all your page display and navigation code from your existing script here.
+
 
 # -------------------------
 # CSS Styling
@@ -847,6 +855,7 @@ elif st.session_state.page == "history":
         
 
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
