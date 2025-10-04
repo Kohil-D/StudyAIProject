@@ -6,22 +6,26 @@ import random
 from datetime import datetime
 
 # -------------------------
-# API Configuration - Using Streamlit secrets
+# CONFIGURATION - Secure API Key Handling
 # -------------------------
 try:
-    API_KEY = st.secrets["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"]
-except KeyError:
-    st.error("API key is missing! Please add it in the Streamlit secrets.")
-    st.stop()
-
+    API_KEY = st.secrets["OPENAI_API_KEY"]
+except:
+    # For local testing - will be hidden in deployment
+    API_KEY = "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"
+    
 URL = "https://api.openai.com/v1/chat/completions"
 
 # -------------------------
-# Backend: Quiz Generator
+# Backend: OpenAI Quiz Generator
 # -------------------------
 def generate_quiz(text, num_questions=5):
+    """Generate quiz questions from text using OpenAI API"""
     if not text or not text.strip():
         return None, "Please provide text to generate questions from."
+    
+    if not API_KEY:
+        return None, "API key is required."
     
     headers = {
         "Authorization": f"Bearer {API_KEY}",
@@ -65,52 +69,44 @@ def generate_quiz(text, num_questions=5):
         response = requests.post(URL, headers=headers, json=data, timeout=30)
         
         if response.status_code != 200:
-            error_detail = ""
-            try:
-                error_data = response.json()
-                error_detail = error_data.get("error", {}).get("message", "")
-            except Exception:
-                pass
-            
             if response.status_code == 401:
-                return None, f"Invalid API key. Please check your API key. {error_detail}"
-            elif response.status_code == 402:
-                return None, "Insufficient credits. Please add credits to your account."
+                return None, "Invalid API key. Please check your OpenAI API key."
             elif response.status_code == 429:
-                return None, "Rate limit exceeded. Please try again later."
+                return None, "Rate limit exceeded. Please try again in a moment."
             else:
-                return None, f"API Error {response.status_code}: {error_detail or response.text}"
+                return None, f"API Error {response.status_code}"
 
-        result = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+        result = response.json()["choices"][0]["message"]["content"]
         
-        def extract_json_from_response(text):
-            pattern = re.compile(r"``````", re.DOTALL)
-            match = pattern.search(text)
-            if match:
-                return match.group(1).strip()
-            match = re.search(r"\{.*\}", text, re.DOTALL)
-            if match:
-                return match.group(0).strip()
-            return text.strip()
-
-        result = extract_json_from_response(result)
+        # Clean markdown formatting if present
+        result = re.sub(r'^```json\s*', '', result)
+        result = re.sub(r'\s*```$', '', result)
+        result = result.strip()
 
         try:
             quiz_data = json.loads(result)
         except json.JSONDecodeError:
-            return None, "Failed to parse quiz response."
+            # Try to extract JSON if wrapped in text
+            match = re.search(r'\{.*\}', result, re.DOTALL)
+            if match:
+                try:
+                    quiz_data = json.loads(match.group())
+                except:
+                    return None, "Failed to parse quiz response."
+            else:
+                return None, "Failed to parse quiz response."
 
         quiz_questions = quiz_data.get("quiz", [])
         
         if not quiz_questions:
             return None, "No questions were generated. Try with more text."
         
+        # Shuffle options while preserving correct answer
         for q in quiz_questions:
-            if all(k in q for k in ["options", "answer", "question"]) and isinstance(q["options"], list):
+            if "options" in q and "answer" in q and "question" in q:
                 correct = q["answer"]
                 random.shuffle(q["options"])
-                if correct not in q["options"]:
-                    q["options"].append(correct)
+                q["answer"] = correct
             else:
                 return None, "Invalid question format received."
 
@@ -127,6 +123,7 @@ def generate_quiz(text, num_questions=5):
 # Initialize Session State
 # -------------------------
 def init_session_state():
+    """Initialize all session state variables"""
     defaults = {
         "page": "main",
         "paragraphs": [],
@@ -149,7 +146,7 @@ init_session_state()
 # Page Configuration
 # -------------------------
 st.set_page_config(
-    page_title="🍰 Study Smart",
+    page_title="📘 Smart Study Partner",
     page_icon="📘",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -159,6 +156,7 @@ st.set_page_config(
 # Dynamic Theme System
 # -------------------------
 def get_colors():
+    """Get color scheme based on dark/light mode"""
     if st.session_state.dark_mode:
         return {
             'bg_primary': '#0f172a',
@@ -206,35 +204,6 @@ def get_colors():
 
 colors = get_colors()
 
-
-# -------------------------
-# Place your CSS styling here exactly as before (omitted here for brevity)
-# -------------------------
-# (Include your full CSS styling block here.)
-
-# -------------------------
-# Sidebar Navigation and Page Logic
-# -------------------------
-# (Include all your sidebar buttons, navigation logic, main page, quiz page,
-# and history page exactly as you previously had them.)
-
-# The rest of your code should remain the same as in your current script.
-
-# -------------------------
-# CSS Styling (unchanged from your original, omitted here for brevity)
-# -------------------------
-# ... include your CSS styling block here exactly as is ...
-
-# -------------------------
-# Sidebar Navigation and page logic
-# -------------------------
-# ... include your full sidebar and all page code as you provided ...
-
-# (For brevity here, your full code below this point remains unchanged.)
-
-# Note: Make sure you copy all your page display and navigation code from your existing script here.
-
-
 # -------------------------
 # CSS Styling
 # -------------------------
@@ -249,11 +218,6 @@ st.markdown(f"""
     /* Hide Streamlit branding */
     #MainMenu {{visibility: hidden;}}
     footer {{visibility: hidden;}}
-    
-    /* Force text colors everywhere */
-    * {{
-        color: {colors['text_primary']};
-    }}
     
     /* Card styling */
     .card {{
@@ -279,11 +243,7 @@ st.markdown(f"""
         border-left: 4px solid {colors['accent_primary']};
         border: 1px solid {colors['border_color']};
         margin-bottom: 1.5rem;
-        color: {colors['text_primary']} !important;
-    }}
-    
-    .question-box * {{
-        color: {colors['text_primary']} !important;
+        color: {colors['text_primary']};
     }}
     
     /* Stats box */
@@ -294,25 +254,24 @@ st.markdown(f"""
         border: 2px solid {colors['accent_primary']};
         text-align: center;
         margin-bottom: 1rem;
-        box-shadow: 0 4px 12px {colors['shadow']};
     }}
     
     .stats-number {{
         font-size: 2rem;
         font-weight: bold;
-        color: {colors['accent_primary']} !important;
+        color: {colors['accent_primary']};
     }}
     
     .stats-label {{
         font-size: 0.9rem;
-        color: {colors['text_primary']} !important;
-        font-weight: 600;
+        color: {colors['text_secondary']};
+        font-weight: 500;
     }}
     
     /* Buttons */
     .stButton > button {{
-        background: linear-gradient(135deg, {colors['accent_primary']} 0%, {colors['accent_secondary']} 100%) !important;
-        color: white !important;
+        background: linear-gradient(135deg, {colors['accent_primary']} 0%, {colors['accent_secondary']} 100%);
+        color: white;
         border-radius: 10px;
         padding: 0.6rem 1.2rem;
         font-weight: 600;
@@ -326,186 +285,72 @@ st.markdown(f"""
         box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
     }}
     
-    .stButton > button p {{
-        color: white !important;
-    }}
-    
     /* Progress bar */
     .stProgress > div > div > div > div {{
         background: linear-gradient(90deg, {colors['accent_primary']} 0%, {colors['accent_secondary']} 100%);
     }}
     
     /* Radio buttons */
-    .stRadio > div {{
-        gap: 0.5rem;
-    }}
-    
     .stRadio > div > label {{
-        background: {colors['bg_secondary']} !important;
-        padding: 0.75rem 1rem !important;
-        border-radius: 8px !important;
-        border: 2px solid {colors['border_color']} !important;
-        margin-bottom: 0.5rem !important;
-        color: {colors['text_primary']} !important;
+        background: {colors['bg_secondary']};
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        border: 2px solid {colors['border_color']};
+        margin-bottom: 0.5rem;
+        color: {colors['text_primary']};
         cursor: pointer;
         transition: all 0.2s ease;
-        display: flex !important;
-        align-items: center !important;
     }}
     
     .stRadio > div > label:hover {{
-        border-color: {colors['accent_primary']} !important;
-        background: {colors['bg_card_hover']} !important;
+        border-color: {colors['accent_primary']};
+        background: {colors['bg_card_hover']};
         transform: translateX(4px);
-    }}
-    
-    .stRadio > div > label > div {{
-        color: {colors['text_primary']} !important;
-    }}
-    
-    .stRadio > div > label span {{
-        color: {colors['text_primary']} !important;
     }}
     
     /* Text areas and inputs */
     .stTextArea > div > div > textarea,
     .stTextInput > div > div > input {{
-        background: {colors['bg_secondary']} !important;
-        color: {colors['text_primary']} !important;
-        border: 2px solid {colors['border_color']} !important;
+        background: {colors['bg_secondary']};
+        color: {colors['text_primary']};
+        border: 1px solid {colors['border_color']};
         border-radius: 8px;
-    }}
-    
-    .stTextArea > div > div > textarea::placeholder,
-    .stTextInput > div > div > input::placeholder {{
-        color: {colors['text_tertiary']} !important;
-    }}
-    
-    .stTextArea label,
-    .stTextInput label {{
-        color: {colors['text_primary']} !important;
-        font-weight: 600 !important;
     }}
     
     /* Sidebar */
     section[data-testid="stSidebar"] {{
-        background: {colors['bg_secondary']} !important;
-        border-right: 2px solid {colors['border_color']};
-    }}
-    
-    section[data-testid="stSidebar"] * {{
-        color: {colors['text_primary']} !important;
-    }}
-    
-    section[data-testid="stSidebar"] .stMarkdown {{
-        color: {colors['text_primary']} !important;
+        background: {colors['bg_secondary']};
+        border-right: 1px solid {colors['border_color']};
     }}
     
     /* Headers */
     h1, h2, h3, h4, h5, h6 {{
-        color: {colors['text_primary']} !important;
-        font-weight: 700 !important;
+        color: {colors['text_primary']};
     }}
     
-    /* Paragraphs and text */
-    p, span, div {{
-        color: {colors['text_primary']} !important;
-    }}
-    
-    label {{
-        color: {colors['text_primary']} !important;
-        font-weight: 500 !important;
-    }}
-    
-    /* Markdown content */
-    .stMarkdown {{
-        color: {colors['text_primary']} !important;
-    }}
-    
-    .stMarkdown * {{
-        color: {colors['text_primary']} !important;
-    }}
-    
-    /* Expander */
-    .streamlit-expanderHeader {{
-        background: {colors['bg_card']} !important;
-        color: {colors['text_primary']} !important;
-        border: 2px solid {colors['border_color']} !important;
-        border-radius: 8px;
-        font-weight: 600 !important;
-    }}
-    
-    .streamlit-expanderHeader:hover {{
-        background: {colors['bg_card_hover']} !important;
-    }}
-    
-    .streamlit-expanderContent {{
-        background: {colors['bg_card']} !important;
-        border: 2px solid {colors['border_color']} !important;
-        border-top: none !important;
-        color: {colors['text_primary']} !important;
-    }}
-    
-    details summary {{
-        color: {colors['text_primary']} !important;
-    }}
-    
-    /* Slider */
-    .stSlider label {{
-        color: {colors['text_primary']} !important;
-        font-weight: 600 !important;
-    }}
-    
-    .stSlider [data-baseweb="slider"] {{
-        background: {colors['bg_secondary']} !important;
+    /* Paragraphs */
+    p {{
+        color: {colors['text_secondary']};
     }}
     
     /* Success/Error/Warning/Info */
     .stSuccess {{
         background: {colors['success_bg']} !important;
         color: {colors['success_text']} !important;
-        border-radius: 8px;
-        padding: 0.75rem;
-        border: 2px solid {colors['success_text']};
-    }}
-    
-    .stSuccess * {{
-        color: {colors['success_text']} !important;
     }}
     
     .stError {{
         background: {colors['error_bg']} !important;
-        color: {colors['error_text']} !important;
-        border-radius: 8px;
-        padding: 0.75rem;
-        border: 2px solid {colors['error_text']};
-    }}
-    
-    .stError * {{
         color: {colors['error_text']} !important;
     }}
     
     .stWarning {{
         background: {colors['warning_bg']} !important;
         color: {colors['warning_text']} !important;
-        border-radius: 8px;
-        padding: 0.75rem;
-        border: 2px solid {colors['warning_text']};
-    }}
-    
-    .stWarning * {{
-        color: {colors['warning_text']} !important;
     }}
     
     .stInfo {{
         background: {colors['info_bg']} !important;
-        color: {colors['info_text']} !important;
-        border-radius: 8px;
-        padding: 0.75rem;
-        border: 2px solid {colors['info_text']};
-    }}
-    
-    .stInfo * {{
         color: {colors['info_text']} !important;
     }}
     
@@ -517,30 +362,6 @@ st.markdown(f"""
         text-align: center;
         color: white;
         margin: 2rem 0;
-        box-shadow: 0 8px 24px {colors['shadow']};
-    }}
-    
-    .score-card * {{
-        color: white !important;
-    }}
-    
-    /* Strong emphasis */
-    strong, b {{
-        color: {colors['text_primary']} !important;
-        font-weight: 700 !important;
-    }}
-    
-    /* Links */
-    a {{
-        color: {colors['accent_primary']} !important;
-    }}
-    
-    /* Code blocks */
-    code {{
-        background: {colors['bg_secondary']} !important;
-        color: {colors['text_primary']} !important;
-        padding: 0.2rem 0.4rem;
-        border-radius: 4px;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -601,8 +422,8 @@ with st.sidebar:
 # MAIN PAGE
 # -------------------------
 if st.session_state.page == "main":
-    st.title("🍰 Study Smart")
-    st.markdown("Play Quizzes from a Paragraph")
+    st.title("📘 Smart Study Partner")
+    st.markdown("### Transform your study materials into interactive quizzes!")
     
     # Input section
     st.markdown("<div class='card'>", unsafe_allow_html=True)
@@ -862,9 +683,7 @@ elif st.session_state.page == "history":
             st.success("History cleared!")
             st.rerun()
         
-
         st.markdown("</div>", unsafe_allow_html=True)
-
 
 
 
