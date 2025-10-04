@@ -78,7 +78,7 @@ def generate_quiz(text, num_questions=5):
                 pass
             
             if response.status_code == 401:
-                return None, f"Invalid API key. Please check your OpenRouter API key. {error_detail}"
+                return None, f"Invalid API key. Please check your OpenAI API key. {error_detail}"
             elif response.status_code == 402:
                 return None, "Insufficient credits. Please add credits to your OpenRouter account."
             elif response.status_code == 429:
@@ -843,6 +843,7 @@ elif st.session_state.page == "history":
         
 
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
