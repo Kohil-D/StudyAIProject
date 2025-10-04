@@ -10,7 +10,7 @@ from datetime import datetime
 # -------------------------
 
 # IMPORTANT: Replace this with your actual OpenAI API key securely
-API_KEY = "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"
+API_KEY = "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"
 
 # OpenAI API endpoint
 URL = "https://api.openai.com/v1/chat/completions"
@@ -847,6 +847,7 @@ elif st.session_state.page == "history":
         
 
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
