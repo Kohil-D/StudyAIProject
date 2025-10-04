@@ -88,10 +88,10 @@ def generate_quiz(text, num_questions=5):
         result = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
         
         # Clean markdown formatting if present
-        result = re.sub(r'^```json\s*', '', result)
-        result = re.sub(r'\s*```
+        
 
-        result = re.sub(r'\s*```$', '', result)
+        result = re.sub(r"^```json\s*", "", result)
+        result = re.sub(r"\s*```
         result = result.strip()
 
         try:
@@ -848,6 +848,7 @@ elif st.session_state.page == "history":
         
 
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
