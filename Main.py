@@ -3,16 +3,22 @@ import requests
 import json
 import re
 import random
+import os
 from datetime import datetime
 
 # -------------------------
-# CONFIGURATION - Secure API Key Handling
+# CONFIGURATION - Environment Variable API Key
 # -------------------------
-try:
-    API_KEY = st.secrets["OPENAI_API_KEY"]
-except:
-    # For local testing - will be hidden in deployment
-    API_KEY = "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"
+# Get API key from environment variable
+API_KEY = os.getenv("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")
+
+# If not set, allow user to input it
+if not API_KEY:
+    st.warning("⚠️ OpenAI API Key not found in environment variables")
+    API_KEY = st.text_input("Enter your OpenAI API Key:", type="password", key="api_key_input")
+    if not API_KEY:
+        st.info("💡 Set the OPENAI_API_KEY environment variable or enter your key above to continue")
+        st.stop()
     
 URL = "https://api.openai.com/v1/chat/completions"
 
@@ -773,6 +779,7 @@ elif st.session_state.page == "quiz":
                         st.session_state.show_results = False
                         st.rerun()
 
+
 # -------------------------
 # HISTORY PAGE
 # -------------------------
@@ -831,4 +838,5 @@ elif st.session_state.page == "history":
             st.success("History cleared!")
             st.rerun()
         
+
         st.markdown("</div>", unsafe_allow_html=True)
