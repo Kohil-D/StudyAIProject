@@ -3,26 +3,23 @@ import requests
 import json
 import re
 import random
-import os
 from datetime import datetime
 
 # -------------------------
-# API Configuration
-# -------------------------
+# API Configuration - hardcoded key (not recommended for production)
+# Replace the string below with your actual API key
+API_KEY = "your_actual_api_key_here"
 
-# Load API key from environment variable securely
-API_KEY = os.getenv("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")
+if not API_KEY or API_KEY == "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":
+    st.error("Please replace 'your_actual_api_key_here' with your real OpenAI API key in the code.")
+    st.stop()
 
-
-
-# OpenAI API endpoint
 URL = "https://api.openai.com/v1/chat/completions"
 
 # -------------------------
 # Backend: Quiz Generator
 # -------------------------
 def generate_quiz(text, num_questions=5):
-    """Generate quiz questions from text using OpenAI API"""
     if not text or not text.strip():
         return None, "Please provide text to generate questions from."
     
@@ -86,7 +83,6 @@ def generate_quiz(text, num_questions=5):
 
         result = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
         
-        # Attempt to extract JSON content from response (handles markdown fences)
         def extract_json_from_response(text):
             pattern = re.compile(r"``````", re.DOTALL)
             match = pattern.search(text)
@@ -209,7 +205,6 @@ def get_colors():
         }
 
 colors = get_colors()
-
 # -------------------------
 # CSS Styling (unchanged from your original, omitted here for brevity)
 # -------------------------
@@ -854,6 +849,7 @@ elif st.session_state.page == "history":
         
 
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
