@@ -10,10 +10,10 @@ from datetime import datetime
 # -------------------------
 
 # IMPORTANT: Replace this with your actual OpenRouter API key
-API_KEY = "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"
+API_KEY = "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"
     
 # OpenRouter API endpoint (corrected)
-URL = "https://openrouter.ai/api/v1/chat/completions"
+URL = "https://api.openai.com/v1/chat/completions"
 
 # -------------------------
 # Backend: Quiz Generator
@@ -843,4 +843,5 @@ elif st.session_state.page == "history":
         
 
         st.markdown("</div>", unsafe_allow_html=True)
+
 
